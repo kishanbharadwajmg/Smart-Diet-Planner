@@ -111,3 +111,9 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Project-specific files to ignore
+*.pdf
+*.zip
+*_report.html
+*_Report.html
