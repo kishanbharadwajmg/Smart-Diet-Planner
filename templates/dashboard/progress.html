@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}Progress Tracking - Smart Diet Planner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-graph-up"></i> Progress Tracking
+                </h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('dashboard.log_meal') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Log Meal
+                    </a>
+                    <a href="{{ url_for('dashboard.home') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-house"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-calendar-range"></i> 
+                Showing progress from {{ start_date.strftime('%B %d, %Y') }} to {{ end_date.strftime('%B %d, %Y') }}
+                ({{ weekly_stats.days_logged }} days logged)
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Avg Daily Calories</h6>
+                            <h3>{{ weekly_stats.avg_calories }}</h3>
+                            <small>Goal: {{ weekly_stats.calorie_goal or 2000 }}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-lightning display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Avg Daily Protein</h6>
+                            <h3>{{ "%.1f"|format(weekly_stats.avg_protein) }}g</h3>
+                            <small>Last 7 days</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-egg display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Avg Daily Carbs</h6>
+                            <h3>{{ "%.1f"|format(weekly_stats.avg_carbs) }}g</h3>
+                            <small>Last 7 days</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-grain display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Avg Daily Fat</h6>
+                            <h3>{{ "%.1f"|format(weekly_stats.avg_fat) }}g</h3>
+                            <small>Last 7 days</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-droplet display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    {% if summaries %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart-line"></i> Daily Calorie Intake vs Goal
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="calorieChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart"></i> Average Macronutrient Breakdown
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="macroChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Weekly Trends
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Daily Breakdown Table -->
+    {% if summaries %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table"></i> Daily Breakdown
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Calories</th>
+                                    <th>Protein (g)</th>
+                                    <th>Carbs (g)</th>
+                                    <th>Fat (g)</th>
+                                    <th>Meals Logged</th>
+                                    <th>Goal Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for summary in summaries %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ summary.date.strftime('%a, %b %d') }}</strong>
+                                        {% if summary.date == summary.date.today() %}
+                                            <span class="badge bg-primary">Today</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ summary.total_calories }}</td>
+                                    <td>{{ "%.1f"|format(summary.total_protein) }}</td>
+                                    <td>{{ "%.1f"|format(summary.total_carbs) }}</td>
+                                    <td>{{ "%.1f"|format(summary.total_fat) }}</td>
+                                    <td>{{ summary.meals_logged or 0 }}</td>
+                                    <td>
+                                        {% set progress = (summary.total_calories / summary.calorie_goal * 100) if summary.calorie_goal > 0 else 0 %}
+                                        <div class="progress" style="width: 80px; height: 20px;">
+                                            <div class="progress-bar 
+                                                {% if progress < 80 %}bg-warning
+                                                {% elif progress <= 110 %}bg-success
+                                                {% else %}bg-danger
+                                                {% endif %}" 
+                                                style="width: {{ progress }}%">
+                                                {{ "%.0f"|format(progress) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Data State -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="py-5">
+                        <i class="bi bi-graph-up display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">No Progress Data Available</h4>
+                        <p class="text-muted">Start logging your meals to see your progress over time!</p>
+                        <a href="{{ url_for('dashboard.log_meal') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Log Your First Meal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Progress Insights -->
+    {% if weekly_stats.days_logged > 0 %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightbulb"></i> Progress Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Consistency</h6>
+                            <p class="text-muted">
+                                You've logged meals for {{ weekly_stats.days_logged }} out of 7 days this week.
+                                {% if weekly_stats.days_logged >= 6 %}
+                                    <span class="text-success">Excellent consistency! 🎉</span>
+                                {% elif weekly_stats.days_logged >= 4 %}
+                                    <span class="text-warning">Good progress, try to log daily!</span>
+                                {% else %}
+                                    <span class="text-danger">Try to log meals more consistently for better tracking.</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Calorie Goal</h6>
+                            <p class="text-muted">
+                                {% if weekly_stats.calorie_goal %}
+                                    {% set avg_vs_goal = (weekly_stats.avg_calories / weekly_stats.calorie_goal * 100) %}
+                                    Your average intake is {{ "%.0f"|format(avg_vs_goal) }}% of your daily goal.
+                                    {% if avg_vs_goal >= 95 and avg_vs_goal <= 105 %}
+                                        <span class="text-success">Perfect! You're right on target! 🎯</span>
+                                    {% elif avg_vs_goal < 80 %}
+                                        <span class="text-warning">You might need to eat more to meet your goals.</span>
+                                    {% elif avg_vs_goal > 120 %}
+                                        <span class="text-warning">Consider smaller portions to stay within your goal.</span>
+                                    {% else %}
+                                        <span class="text-info">You're close to your goal!</span>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{{ url_for('dashboard.goals') }}">Set your calorie goal</a> to get personalized insights.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if summaries %}
+<script>
+// Chart data from backend
+const chartData = {{ chart_data|tojson }};
+
+// Calorie Chart
+const calorieCtx = document.getElementById('calorieChart').getContext('2d');
+new Chart(calorieCtx, {
+    type: 'line',
+    data: {
+        labels: chartData.dates.map(date => new Date(date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})),
+        datasets: [{
+            label: 'Daily Calories',
+            data: chartData.calories,
+            borderColor: 'rgb(54, 162, 235)',
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            tension: 0.1,
+            fill: true
+        }, {
+            label: 'Calorie Goal',
+            data: chartData.calorie_goals,
+            borderColor: 'rgb(255, 99, 132)',
+            borderDash: [5, 5],
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Calories'
+                }
+            }
+        }
+    }
+});
+
+// Macro Pie Chart
+const macroCtx = document.getElementById('macroChart').getContext('2d');
+const avgProtein = {{ weekly_stats.avg_protein }};
+const avgCarbs = {{ weekly_stats.avg_carbs }};
+const avgFat = {{ weekly_stats.avg_fat }};
+
+new Chart(macroCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Protein', 'Carbs', 'Fat'],
+        datasets: [{
+            data: [avgProtein * 4, avgCarbs * 4, avgFat * 9], // Convert to calories
+            backgroundColor: [
+                'rgba(40, 167, 69, 0.8)',
+                'rgba(255, 193, 7, 0.8)',
+                'rgba(23, 162, 184, 0.8)'
+            ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Trend Chart
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: chartData.dates.map(date => new Date(date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})),
+        datasets: [{
+            label: 'Protein (g)',
+            data: chartData.protein,
+            borderColor: 'rgba(40, 167, 69, 1)',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.1
+        }, {
+            label: 'Carbs (g)',
+            data: chartData.carbs,
+            borderColor: 'rgba(255, 193, 7, 1)',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            tension: 0.1
+        }, {
+            label: 'Fat (g)',
+            data: chartData.fat,
+            borderColor: 'rgba(23, 162, 184, 1)',
+            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Grams'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

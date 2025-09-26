@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout:*)",
+      "Bash(python test:*)",
+      "Bash(mkdir:*)",
+      "Bash(wc:*)",
+      "Bash(python:*)",
+      "Bash(del QUICK_START.md SETUP_COMPLETE.md setup.py setup_simple.py test_templates.py projectplan.md food.csv import_foods.py)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(pip install:*)",
+      "Bash(del test_gemini.py)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(true)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Add Food Item - Smart Diet Planner{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-plus-circle"></i> Add New Food Item
+                        </h4>
+                        <a href="{{ url_for('admin.foods') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Foods
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Food Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="invalid-feedback">
+                                    Please enter the food name.
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="name_hindi" class="form-label">Hindi Name</label>
+                                <input type="text" class="form-control" id="name_hindi" name="name_hindi">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">Category *</label>
+                                <input type="text" class="form-control" id="category" name="category" 
+                                       list="categories" required>
+                                <datalist id="categories">
+                                    {% for category in categories %}
+                                    <option value="{{ category }}">
+                                    {% endfor %}
+                                </datalist>
+                                <div class="invalid-feedback">
+                                    Please enter the food category.
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="food_type" class="form-label">Food Type *</label>
+                                <select class="form-select" id="food_type" name="food_type" required>
+                                    <option value="">Select Type</option>
+                                    {% for food_type in food_types %}
+                                    <option value="{{ food_type }}">{{ food_type }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select the food type.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nutritional Information -->
+                        <h5 class="mt-4 mb-3">Nutritional Information (per 100g)</h5>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="calories_per_100g" class="form-label">Calories *</label>
+                                <input type="number" class="form-control" id="calories_per_100g" 
+                                       name="calories_per_100g" step="0.1" min="0" required>
+                                <div class="invalid-feedback">
+                                    Please enter calories per 100g.
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="protein_per_100g" class="form-label">Protein (g) *</label>
+                                <input type="number" class="form-control" id="protein_per_100g" 
+                                       name="protein_per_100g" step="0.1" min="0" required>
+                                <div class="invalid-feedback">
+                                    Please enter protein per 100g.
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="carbs_per_100g" class="form-label">Carbs (g) *</label>
+                                <input type="number" class="form-control" id="carbs_per_100g" 
+                                       name="carbs_per_100g" step="0.1" min="0" required>
+                                <div class="invalid-feedback">
+                                    Please enter carbs per 100g.
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="fat_per_100g" class="form-label">Fat (g) *</label>
+                                <input type="number" class="form-control" id="fat_per_100g" 
+                                       name="fat_per_100g" step="0.1" min="0" required>
+                                <div class="invalid-feedback">
+                                    Please enter fat per 100g.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="fiber_per_100g" class="form-label">Fiber (g)</label>
+                                <input type="number" class="form-control" id="fiber_per_100g" 
+                                       name="fiber_per_100g" step="0.1" min="0" value="0">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="gi_index" class="form-label">GI Index</label>
+                                <input type="number" class="form-control" id="gi_index" 
+                                       name="gi_index" min="0" max="100">
+                                <div class="form-text">Glycemic Index (0-100)</div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="serving_size_grams" class="form-label">Serving Size (g)</label>
+                                <input type="number" class="form-control" id="serving_size_grams" 
+                                       name="serving_size_grams" step="0.1" min="1" value="100">
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Optional description of the food item"></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-plus-circle"></i> Add Food Item
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+{% endblock %}

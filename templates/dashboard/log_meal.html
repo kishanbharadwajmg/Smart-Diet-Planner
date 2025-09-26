@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}Log Meal - Smart Diet Planner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-plus-circle"></i> Log Meal
+                </h1>
+                <a href="{{ url_for('dashboard.home') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Food Search Panel -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-search"></i> Search Foods
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Search Form -->
+                    <form id="searchForm" class="mb-3">
+                        <div class="input-group">
+                            <input type="text" id="searchQuery" class="form-control" 
+                                   placeholder="Search for food items..." autocomplete="off">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Filter Options -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <select id="categoryFilter" class="form-select">
+                                <option value="">All Categories</option>
+                                <option value="Grains">Grains</option>
+                                <option value="Vegetables">Vegetables</option>
+                                <option value="Fruits">Fruits</option>
+                                <option value="Dairy">Dairy</option>
+                                <option value="Protein">Protein</option>
+                                <option value="Snacks">Snacks</option>
+                                <option value="Beverages">Beverages</option>
+                                <option value="Spices">Spices</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <select id="foodTypeFilter" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="Vegetarian">Vegetarian</option>
+                                <option value="Non-Vegetarian">Non-Vegetarian</option>
+                                <option value="Vegan">Vegan</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Loading Indicator -->
+                    <div id="loadingIndicator" class="text-center d-none">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-2">Searching...</span>
+                    </div>
+
+                    <!-- Search Results -->
+                    <div id="searchResults">
+                        <p class="text-muted text-center">Search for foods to log your meal</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meal Logging Panel -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-journal-plus"></i> Log Selected Food
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="logMealForm">
+                        <!-- Selected Food Display -->
+                        <div id="selectedFoodInfo" class="alert alert-info d-none">
+                            <h6 id="selectedFoodName"></h6>
+                            <p class="mb-0" id="selectedFoodDetails"></p>
+                        </div>
+
+                        <!-- Hidden food ID -->
+                        <input type="hidden" id="selectedFoodId" name="food_id">
+
+                        <!-- Quantity Input -->
+                        <div class="mb-3">
+                            <label class="form-label">Quantity *</label>
+                            <div class="row">
+                                <div class="col-8">
+                                    <input type="number" id="quantityAmount" class="form-control" 
+                                           min="0.1" step="0.1" placeholder="Enter amount" required>
+                                </div>
+                                <div class="col-4">
+                                    <select id="quantityUnit" class="form-select" required>
+                                        <option value="">Unit</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-text">
+                                Enter how much you consumed (e.g., 8 pieces, 1.5 cups, 250 grams)
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Options -->
+                        <div class="mb-3" id="quickOptions">
+                            <label class="form-label">Quick Options</label>
+                            <div id="quickButtons" class="d-flex flex-wrap gap-2">
+                                <!-- Quick buttons will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden input for final grams calculation -->
+                        <input type="hidden" id="quantity_grams" name="quantity_grams">
+
+                        <!-- Meal Type Selection -->
+                        <div class="mb-3">
+                            <label for="meal_type" class="form-label">Meal Type *</label>
+                            <select id="meal_type" name="meal_type" class="form-select" required>
+                                <option value="">Select meal type</option>
+                                {% for meal_type in meal_types %}
+                                <option value="{{ meal_type }}">{{ meal_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Date Input -->
+                        <div class="mb-3">
+                            <label for="log_date" class="form-label">Date</label>
+                            <input type="date" id="log_date" name="log_date" class="form-control">
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (optional)</label>
+                            <textarea id="notes" name="notes" class="form-control" rows="2"
+                                      placeholder="Any additional notes about this meal..."></textarea>
+                        </div>
+
+                        <!-- Nutrition Preview -->
+                        <div id="nutritionPreview" class="d-none">
+                            <h6>Estimated Nutrition:</h6>
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <strong id="previewCalories">0</strong><br>
+                                    <small class="text-muted">Calories</small>
+                                </div>
+                                <div class="col-3">
+                                    <strong id="previewProtein">0g</strong><br>
+                                    <small class="text-muted">Protein</small>
+                                </div>
+                                <div class="col-3">
+                                    <strong id="previewCarbs">0g</strong><br>
+                                    <small class="text-muted">Carbs</small>
+                                </div>
+                                <div class="col-3">
+                                    <strong id="previewFat">0g</strong><br>
+                                    <small class="text-muted">Fat</small>
+                                </div>
+                            </div>
+                            <hr>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="submitMealBtn" class="btn btn-success w-100" disabled>
+                            <i class="bi bi-check-circle"></i> Log This Meal
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Log Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning"></i> Quick Log Common Foods
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Coming soon: Quick buttons for commonly consumed foods</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let selectedFood = null;
+
+// Set today's date as default
+document.getElementById('log_date').value = new Date().toISOString().split('T')[0];
+
+// Search functionality
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    searchFoods();
+});
+
+document.getElementById('categoryFilter').addEventListener('change', searchFoods);
+document.getElementById('foodTypeFilter').addEventListener('change', searchFoods);
+
+function searchFoods() {
+    const query = document.getElementById('searchQuery').value.trim();
+    const category = document.getElementById('categoryFilter').value;
+    const foodType = document.getElementById('foodTypeFilter').value;
+    
+    if (!query && !category && !foodType) {
+        document.getElementById('searchResults').innerHTML = 
+            '<p class="text-muted text-center">Search for foods to log your meal</p>';
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('loadingIndicator').classList.remove('d-none');
+    document.getElementById('searchResults').innerHTML = '';
+    
+    // Build query params
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (category) params.append('category', category);
+    if (foodType) params.append('food_type', foodType);
+    
+    fetch(`/api/search_foods?${params}`)
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Search response:', data);
+            document.getElementById('loadingIndicator').classList.add('d-none');
+            
+            if (data.status === 'success' && data.foods.length > 0) {
+                displaySearchResults(data.foods);
+            } else {
+                document.getElementById('searchResults').innerHTML = 
+                    `<p class="text-muted text-center">No foods found matching your search. Response: ${JSON.stringify(data)}</p>`;
+            }
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            document.getElementById('loadingIndicator').classList.add('d-none');
+            document.getElementById('searchResults').innerHTML = 
+                `<p class="text-danger text-center">Search failed: ${error.message}</p>`;
+        });
+}
+
+function displaySearchResults(foods) {
+    const resultsHtml = foods.map(food => `
+        <div class="food-item border-bottom py-2 cursor-pointer" onclick="selectFood(${JSON.stringify(food).replace(/"/g, '&quot;')})">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${food.name}</strong><br>
+                    <small class="text-muted">${food.category} • ${food.food_type}</small>
+                </div>
+                <div class="text-end">
+                    <strong>${food.calories_per_100g} cal/100g</strong><br>
+                    <small class="text-muted">P: ${food.protein_per_100g}g C: ${food.carbs_per_100g}g F: ${food.fat_per_100g}g</small>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('searchResults').innerHTML = resultsHtml;
+}
+
+function selectFood(foodData) {
+    selectedFood = foodData;
+    
+    // Update UI
+    document.getElementById('selectedFoodId').value = foodData.id;
+    document.getElementById('selectedFoodName').textContent = foodData.name;
+    document.getElementById('selectedFoodDetails').textContent = 
+        `${foodData.category} • ${foodData.calories_per_100g} cal, ${foodData.protein_per_100g}g protein, ${foodData.carbs_per_100g}g carbs, ${foodData.fat_per_100g}g fat per 100g`;
+    
+    document.getElementById('selectedFoodInfo').classList.remove('d-none');
+    
+    // Populate unit dropdown
+    const unitSelect = document.getElementById('quantityUnit');
+    unitSelect.innerHTML = '<option value="">Unit</option>';
+    
+    if (foodData.serving_units) {
+        const units = foodData.serving_units;
+        
+        // Add primary unit (pieces, cups, etc.)
+        if (units.unit !== 'grams') {
+            const primaryOption = document.createElement('option');
+            primaryOption.value = units.unit;
+            primaryOption.textContent = units.unit + (units.unit === 'piece' ? 's' : '');
+            unitSelect.appendChild(primaryOption);
+        }
+        
+        // Always add grams option
+        const gramsOption = document.createElement('option');
+        gramsOption.value = 'grams';
+        gramsOption.textContent = 'grams';
+        unitSelect.appendChild(gramsOption);
+        
+        // Create quick buttons for common quantities
+        const quickButtons = document.getElementById('quickButtons');
+        quickButtons.innerHTML = '';
+        
+        if (units.common_quantities && units.unit !== 'grams') {
+            units.common_quantities.forEach(qty => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-outline-primary btn-sm';
+                button.textContent = `${qty} ${units.unit}${qty > 1 && units.unit === 'piece' ? 's' : ''}`;
+                button.onclick = () => {
+                    document.getElementById('quantityAmount').value = qty;
+                    document.getElementById('quantityUnit').value = units.unit;
+                    calculateGrams();
+                };
+                quickButtons.appendChild(button);
+            });
+        }
+    }
+    
+    document.getElementById('submitMealBtn').disabled = false;
+}
+
+// Calculate grams from quantity and unit
+function calculateGrams() {
+    if (!selectedFood || !selectedFood.serving_units) return 0;
+    
+    const amount = parseFloat(document.getElementById('quantityAmount').value) || 0;
+    const unit = document.getElementById('quantityUnit').value;
+    
+    if (amount <= 0) return 0;
+    
+    let grams = 0;
+    if (unit === 'grams') {
+        grams = amount;
+    } else if (unit === selectedFood.serving_units.unit) {
+        grams = amount * selectedFood.serving_units.grams_per_unit;
+    }
+    
+    // Update hidden input
+    document.getElementById('quantity_grams').value = grams;
+    
+    // Update nutrition preview
+    updateNutritionPreview(grams);
+    
+    return grams;
+}
+
+// Add event listeners for quantity inputs
+document.getElementById('quantityAmount').addEventListener('input', calculateGrams);
+document.getElementById('quantityUnit').addEventListener('change', calculateGrams);
+
+function updateNutritionPreview(grams = null) {
+    if (!selectedFood) return;
+    
+    const quantity = grams || parseFloat(document.getElementById('quantity_grams').value) || 0;
+    if (quantity <= 0) {
+        document.getElementById('nutritionPreview').classList.add('d-none');
+        return;
+    }
+    
+    const factor = quantity / 100;
+    const calories = Math.round(selectedFood.calories_per_100g * factor);
+    const protein = Math.round(selectedFood.protein_per_100g * factor * 10) / 10;
+    const carbs = Math.round(selectedFood.carbs_per_100g * factor * 10) / 10;
+    const fat = Math.round(selectedFood.fat_per_100g * factor * 10) / 10;
+    
+    document.getElementById('previewCalories').textContent = calories;
+    document.getElementById('previewProtein').textContent = protein + 'g';
+    document.getElementById('previewCarbs').textContent = carbs + 'g';
+    document.getElementById('previewFat').textContent = fat + 'g';
+    
+    document.getElementById('nutritionPreview').classList.remove('d-none');
+}
+
+// Handle meal logging form submission
+document.getElementById('logMealForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!selectedFood) {
+        alert('Please select a food item first');
+        return;
+    }
+    
+    // Calculate final quantity in grams
+    const finalQuantity = calculateGrams();
+    if (!finalQuantity || finalQuantity <= 0) {
+        alert('Please enter a valid quantity');
+        return;
+    }
+    
+    const formData = new FormData(this);
+    formData.set('quantity_grams', finalQuantity);
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitMealBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Logging...';
+    submitBtn.disabled = true;
+    
+    fetch('/api/log_meal', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Show success message
+            alert('Meal logged successfully!');
+            // Redirect to dashboard or food diary
+            window.location.href = '/dashboard/';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Failed to log meal. Please try again.');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Add hover effect for food items
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.food-item')) {
+        e.target.closest('.food-item').style.backgroundColor = '#f8f9fa';
+        setTimeout(() => {
+            e.target.closest('.food-item').style.backgroundColor = '';
+        }, 200);
+    }
+});
+</script>
+
+<style>
+.food-item {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.food-item:hover {
+    background-color: #f8f9fa !important;
+}
+</style>
+{% endblock %}

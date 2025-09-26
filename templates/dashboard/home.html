@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Diet Planner{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-home"></i> Welcome, {{ current_user.first_name }}!
+                </h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('dashboard.log_meal') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Log Meal
+                    </a>
+                    <a href="{{ url_for('dashboard.food_diary') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-book"></i> Food Diary
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Calories</h6>
+                            <h3>{{ summary.total_calories if summary else 0 }}</h3>
+                            <small>of {{ current_user.daily_calorie_goal or 2000 }} goal</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-bolt display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Protein</h6>
+                            <h3>{{ "%.1f"|format(summary.total_protein if summary else 0) }}g</h3>
+                            <small>{{ "%.1f"|format(macro_progress.protein.percentage if macro_progress and macro_progress.protein else 0) }}% of goal</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-drumstick-bite display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Carbs</h6>
+                            <h3>{{ "%.1f"|format(summary.total_carbs if summary else 0) }}g</h3>
+                            <small>{{ "%.1f"|format(macro_progress.carbs.percentage if macro_progress and macro_progress.carbs else 0) }}% of goal</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-bread-slice display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Fat</h6>
+                            <h3>{{ "%.1f"|format(summary.total_fat if summary else 0) }}g</h3>
+                            <small>{{ "%.1f"|format(macro_progress.fat.percentage if macro_progress and macro_progress.fat else 0) }}% of goal</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tint display-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bars -->
+    {% if calorie_progress %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Today's Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Calories Progress</label>
+                            <div class="progress mb-3">
+                                <div class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: {{ calorie_progress.percentage if calorie_progress else 0 }}%"
+                                     aria-valuenow="{{ calorie_progress.percentage if calorie_progress else 0 }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ "%.1f"|format(calorie_progress.percentage if calorie_progress else 0) }}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Protein Progress</label>
+                            <div class="progress mb-3">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ macro_progress.protein.percentage if macro_progress and macro_progress.protein else 0 }}%"
+                                     aria-valuenow="{{ macro_progress.protein.percentage if macro_progress and macro_progress.protein else 0 }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ "%.1f"|format(macro_progress.protein.percentage if macro_progress and macro_progress.protein else 0) }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Meals and Recommendations -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i> Recent Meals
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_meals %}
+                        {% for meal in recent_meals %}
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <strong>{{ meal.food.name }}</strong><br>
+                                <small class="text-muted">
+                                    {{ meal.meal_type }} • {{ meal.quantity_grams }}g
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <strong>{{ meal.calories_consumed }} cal</strong><br>
+                                <small class="text-muted">{{ meal.date_logged.strftime('%H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('dashboard.food_diary') }}" class="btn btn-outline-primary btn-sm">
+                                View All Meals
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No meals logged today. 
+                            <a href="{{ url_for('dashboard.log_meal') }}">Log your first meal!</a>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Recommended Foods
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recommended_foods %}
+                        {% for food in recommended_foods %}
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <strong>{{ food.name }}</strong><br>
+                                <small class="text-muted">
+                                    {{ food.category }} • {{ food.calories_per_100g }} cal/100g
+                                </small>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('dashboard.food_detail', food_id=food.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('dashboard.recommendations') }}" class="btn btn-outline-success btn-sm">
+                                More Recommendations
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No recommendations available yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('dashboard.log_meal') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus-circle"></i><br>
+                                Log Meal
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('dashboard.search') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-search"></i><br>
+                                Search Foods
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('dashboard.progress') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-chart-line"></i><br>
+                                View Progress
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('dashboard.goals') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-bullseye"></i><br>
+                                Update Goals
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(() => {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

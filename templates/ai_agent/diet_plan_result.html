@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block title %}Your Personalized Diet Plan{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1>Your Personalized 7-Day Diet Plan</h1>
+                <p class="text-muted">Generated on {{ generated_at[:10] }} - Tailored specifically for you</p>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('ai_agent.generate_diet_plan') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-redo"></i> Generate New Plan
+                    </a>
+                    <button class="btn btn-outline-success" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print Plan
+                    </button>
+                    <a href="{{ url_for('ai_agent.chat_interface') }}" class="btn btn-outline-info">
+                        <i class="fas fa-comments"></i> Ask Questions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if diet_plan %}
+    <!-- Nutritional Summary -->
+    {% if diet_plan.nutritional_summary %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-pie"></i> Nutritional Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        {% set summary = diet_plan.nutritional_summary.daily_average %}
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4 class="text-primary">{{ summary.calories or 0 }}</h4>
+                                <small>Daily Calories</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4 class="text-success">{{ summary.protein or 0 }}g</h4>
+                                <small>Protein</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4 class="text-warning">{{ summary.carbs or 0 }}g</h4>
+                                <small>Carbohydrates</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <h4 class="text-info">{{ summary.fat or 0 }}g</h4>
+                                <small>Fat</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 7-Day Meal Plan -->
+    {% if diet_plan.diet_plan %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-calendar-week"></i> 7-Day Meal Plan</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="mealPlanAccordion">
+                        {% for day_key, day_meals in diet_plan.diet_plan.items() %}
+                        {% set day_num = day_key.split('_')[1] %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ day_num }}">
+                                <button class="accordion-button {% if day_num != '1' %}collapsed{% endif %}" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#collapse{{ day_num }}" 
+                                        aria-expanded="{% if day_num == '1' %}true{% else %}false{% endif %}" 
+                                        aria-controls="collapse{{ day_num }}">
+                                    <strong>Day {{ day_num }}</strong>
+                                    {% if day_meals %}
+                                    {% set daily_total = namespace(calories=0, protein=0, carbs=0, fat=0) %}
+                                    {% for meal_name, meal_data in day_meals.items() %}
+                                        {% set daily_total.calories = daily_total.calories + (meal_data.calories or 0) %}
+                                        {% set daily_total.protein = daily_total.protein + (meal_data.protein or 0) %}
+                                        {% set daily_total.carbs = daily_total.carbs + (meal_data.carbs or 0) %}
+                                        {% set daily_total.fat = daily_total.fat + (meal_data.fat or 0) %}
+                                    {% endfor %}
+                                    <span class="ms-auto me-3">
+                                        <small class="text-muted">{{ daily_total.calories }} cal</small>
+                                    </span>
+                                    {% endif %}
+                                </button>
+                            </h2>
+                            <div id="collapse{{ day_num }}" class="accordion-collapse collapse {% if day_num == '1' %}show{% endif %}" 
+                                 aria-labelledby="heading{{ day_num }}" data-bs-parent="#mealPlanAccordion">
+                                <div class="accordion-body">
+                                    {% if day_meals %}
+                                    <div class="row">
+                                        {% for meal_name, meal_data in day_meals.items() %}
+                                        <div class="col-lg-6 mb-3">
+                                            <div class="meal-card">
+                                                <h6 class="meal-title">
+                                                    {% if meal_name == 'breakfast' %}
+                                                        <i class="fas fa-sun text-warning"></i> Breakfast
+                                                    {% elif meal_name == 'morning_snack' %}
+                                                        <i class="fas fa-apple-alt text-success"></i> Morning Snack
+                                                    {% elif meal_name == 'lunch' %}
+                                                        <i class="fas fa-utensils text-primary"></i> Lunch
+                                                    {% elif meal_name == 'evening_snack' %}
+                                                        <i class="fas fa-cookie-bite text-info"></i> Evening Snack
+                                                    {% elif meal_name == 'dinner' %}
+                                                        <i class="fas fa-moon text-dark"></i> Dinner
+                                                    {% endif %}
+                                                </h6>
+                                                <div class="meal-content">
+                                                    <h6 class="meal-name">{{ meal_data.name or 'Meal' }}</h6>
+                                                    
+                                                    <div class="nutrition-info">
+                                                        <small class="nutrition-tag">{{ meal_data.calories or 0 }} cal</small>
+                                                        <small class="nutrition-tag">{{ meal_data.protein or 0 }}g protein</small>
+                                                        <small class="nutrition-tag">{{ meal_data.carbs or 0 }}g carbs</small>
+                                                        <small class="nutrition-tag">{{ meal_data.fat or 0 }}g fat</small>
+                                                    </div>
+                                                    
+                                                    {% if meal_data.ingredients %}
+                                                    <div class="ingredients mt-2">
+                                                        <strong>Ingredients:</strong>
+                                                        <ul class="ingredient-list">
+                                                            {% for ingredient in meal_data.ingredients %}
+                                                            <li>{{ ingredient }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </div>
+                                                    {% endif %}
+                                                    
+                                                    {% if meal_data.instructions %}
+                                                    <div class="instructions mt-2">
+                                                        <strong>Preparation:</strong>
+                                                        <div class="instruction-text">{{ meal_data.instructions|safe|replace('\n', '<br>')|replace('. ', '.<br>') }}</div>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted">No meal data available for this day.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Shopping List -->
+    {% if diet_plan.shopping_list %}
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-shopping-cart"></i> Shopping List</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for item in diet_plan.shopping_list %}
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="item{{ loop.index }}">
+                                <label class="form-check-label" for="item{{ loop.index }}">
+                                    {{ item }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips -->
+        {% if diet_plan.tips %}
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-lightbulb"></i> Tips & Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for tip in diet_plan.tips %}
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>{{ tip }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Meal Timing -->
+    {% if diet_plan.meal_timing %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-clock"></i> Suggested Meal Timing</h5>
+                </div>
+                <div class="card-body">
+                    {% for time, meal in diet_plan.meal_timing.items() %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ time }}</strong>
+                        <span>{{ meal }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <h5><i class="fas fa-exclamation-triangle"></i> No Diet Plan Available</h5>
+                <p>We couldn't generate your diet plan. This might be due to:</p>
+                <ul>
+                    <li>Temporary AI service unavailability</li>
+                    <li>Missing or incomplete profile information</li>
+                    <li>Network connectivity issues</li>
+                </ul>
+                <a href="{{ url_for('ai_agent.generate_diet_plan') }}" class="btn btn-primary">Try Again</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.stat-card {
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.meal-card {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    height: 100%;
+    background-color: #f8f9fa;
+}
+
+.meal-title {
+    color: #495057;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 5px;
+}
+
+.meal-name {
+    color: #212529;
+    margin-bottom: 8px;
+}
+
+.nutrition-info {
+    margin-bottom: 10px;
+}
+
+.nutrition-tag {
+    display: inline-block;
+    background-color: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 12px;
+    margin-right: 5px;
+    margin-bottom: 3px;
+    font-size: 0.75em;
+}
+
+.ingredient-list {
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.ingredient-list li {
+    margin-bottom: 2px;
+}
+
+.instruction-text {
+    font-size: 0.9em;
+    margin-bottom: 0;
+    line-height: 1.5;
+    background-color: #fff;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.ingredients {
+    background-color: #fff;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid #28a745;
+}
+
+@media print {
+    .btn-group, .card-header button {
+        display: none !important;
+    }
+    
+    .accordion-button {
+        background-color: transparent !important;
+        border: none !important;
+    }
+    
+    .accordion-collapse {
+        display: block !important;
+    }
+}
+</style>
+
+<script>
+// Auto-expand first day on load
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers for shopping list items
+    document.querySelectorAll('.form-check-input').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const label = this.nextElementSibling;
+            if (this.checked) {
+                label.style.textDecoration = 'line-through';
+                label.style.color = '#6c757d';
+            } else {
+                label.style.textDecoration = 'none';
+                label.style.color = '#212529';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

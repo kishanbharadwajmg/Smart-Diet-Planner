@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Smart Diet Planner{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-person-circle"></i> My Profile
+                </h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Edit Profile
+                    </a>
+                    <a href="{{ url_for('dashboard.home') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-house"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Profile Overview -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-person-badge"></i> Personal Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Full Name:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.first_name }} {{ user.last_name }}
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Email:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.email }}
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Username:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.username }}
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Age:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.age }} years old
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Gender:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.gender }}
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Account Type:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {% if user.is_admin %}
+                                        <span class="badge bg-danger">Administrator</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Regular User</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <strong>Member Since:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.created_at.strftime('%B %d, %Y') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-speedometer2"></i> Quick Stats
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <h4 class="text-primary">{{ user.food_logs.count() }}</h4>
+                                <small class="text-muted">Meals Logged</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h4 class="text-success">{{ user.daily_summaries.count() }}</h4>
+                                <small class="text-muted">Days Tracked</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h4 class="text-info">{{ ((user.created_at - user.created_at).days + 1) }}</h4>
+                                <small class="text-muted">Days Since Joining</small>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <a href="{{ url_for('dashboard.progress') }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-graph-up"></i> View Progress
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physical Stats -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-heart-pulse"></i> Physical Stats
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <strong>Height:</strong><br>
+                                    <span class="h5 text-primary">{{ user.height }} cm</span>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Weight:</strong><br>
+                                    <span class="h5 text-success">{{ user.weight }} kg</span>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <strong>BMI:</strong><br>
+                                    {% set bmi = user.get_bmi() %}
+                                    {% set bmi_category = user.get_bmi_category() %}
+                                    <span class="h5 
+                                        {% if bmi_category == 'Normal weight' %}text-success
+                                        {% elif bmi_category == 'Underweight' %}text-info
+                                        {% elif bmi_category == 'Overweight' %}text-warning
+                                        {% else %}text-danger
+                                        {% endif %}">
+                                        {{ bmi }}
+                                    </span>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Category:</strong><br>
+                                    <span class="badge 
+                                        {% if bmi_category == 'Normal weight' %}bg-success
+                                        {% elif bmi_category == 'Underweight' %}bg-info
+                                        {% elif bmi_category == 'Overweight' %}bg-warning
+                                        {% else %}bg-danger
+                                        {% endif %}">
+                                        {{ bmi_category }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Activity Level:</strong><br>
+                                    <span class="badge bg-info">{{ user.activity_level }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-calculator"></i> Metabolic Stats
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <strong>BMR:</strong><br>
+                                    <span class="h5 text-primary">{{ user.calculate_bmr()|round(0) }}</span>
+                                    <small class="text-muted d-block">cal/day at rest</small>
+                                </div>
+                                <div class="col-6">
+                                    <strong>TDEE:</strong><br>
+                                    <span class="h5 text-success">{{ user.calculate_tdee()|round(0) }}</span>
+                                    <small class="text-muted d-block">total cal/day</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="alert alert-info small mb-0">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>BMR:</strong> Calories needed at rest<br>
+                                        <strong>TDEE:</strong> Total daily calories needed
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dietary Preferences -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-egg-fried"></i> Dietary Preferences & Health
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Diet Type:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    <span class="badge bg-{{ 'success' if user.food_preferences == 'Vegetarian' else 'warning' if user.food_preferences == 'Eggetarian' else 'danger' }}">
+                                        {{ user.food_preferences }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Health Status:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {% if user.is_diabetic %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-heart-pulse"></i> Diabetic
+                                        </span>
+                                        <small class="text-muted d-block">Low GI foods recommended</small>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> No restrictions
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-sm-4">
+                                    <strong>Food Preferences:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    <a href="{{ url_for('auth.preferences') }}" class="btn btn-outline-info btn-sm">
+                                        <i class="bi bi-gear"></i> Manage Preferences
+                                    </a>
+                                    <small class="text-muted d-block mt-1">Allergies, dislikes, medical restrictions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-target"></i> Current Goals
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if user.daily_calorie_goal %}
+                            <div class="mb-3">
+                                <strong>Daily Calories:</strong><br>
+                                <span class="h5 text-primary">{{ user.daily_calorie_goal|round(0) }}</span>
+                                <small class="text-muted d-block">cal/day target</small>
+                            </div>
+                            
+                            {% if user.protein_goal %}
+                            <div class="mb-3">
+                                <div class="row">
+                                    <div class="col-4">
+                                        <small class="text-muted">Protein:</small><br>
+                                        <strong>{{ user.protein_goal|round(0) }}g</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Carbs:</small><br>
+                                        <strong>{{ user.carb_goal|round(0) }}g</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Fat:</small><br>
+                                        <strong>{{ user.fat_goal|round(0) }}g</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% else %}
+                            <div class="text-center text-muted">
+                                <i class="bi bi-target display-6"></i>
+                                <p class="mt-2">No goals set yet</p>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-grid">
+                                <a href="{{ url_for('dashboard.goals') }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-target"></i> Update Goals
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Security -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-shield-check"></i> Account Security
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Password:</strong><br>
+                                <span class="text-muted">••••••••••••</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Last Updated:</strong><br>
+                                <span class="text-muted">{{ user.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                    <i class="bi bi-key"></i> Change Password
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                    <i class="bi bi-trash"></i> Delete Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-gear"></i> Quick Actions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
+                                    <i class="bi bi-pencil"></i> Edit Profile
+                                </a>
+                                <a href="{{ url_for('auth.preferences') }}" class="btn btn-outline-info">
+                                    <i class="bi bi-sliders"></i> Dietary Preferences
+                                </a>
+                                <a href="{{ url_for('dashboard.goals') }}" class="btn btn-outline-success">
+                                    <i class="bi bi-target"></i> Update Goals
+                                </a>
+                                <a href="{{ url_for('dashboard.export_page') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-download"></i> Export Data
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('auth.change_password') }}">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password *</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password *</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                        <div class="form-text">Minimum 6 characters</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm New Password *</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-key"></i> Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Delete Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Warning:</strong> This action cannot be undone. All your data including food logs, 
+                    progress history, and preferences will be permanently deleted.
+                </div>
+                
+                <p>If you're sure you want to delete your account, please enter your password to confirm:</p>
+                
+                <form method="POST" action="{{ url_for('auth.delete_account') }}">
+                    <div class="mb-3">
+                        <label for="delete_password" class="form-label">Password *</label>
+                        <input type="password" class="form-control" id="delete_password" name="password" required>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="delete_confirm" name="confirm_delete" required>
+                        <label class="form-check-label" for="delete_confirm">
+                            I understand this action cannot be undone
+                        </label>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Delete Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Password strength validation
+document.getElementById('new_password').addEventListener('input', function() {
+    const password = this.value;
+    const feedback = document.querySelector('#new_password + .form-text');
+    
+    if (password.length < 6) {
+        feedback.textContent = 'Password must be at least 6 characters';
+        feedback.className = 'form-text text-danger';
+    } else if (password.length < 8) {
+        feedback.textContent = 'Password is weak - consider using 8+ characters';
+        feedback.className = 'form-text text-warning';
+    } else {
+        feedback.textContent = 'Password strength: Good';
+        feedback.className = 'form-text text-success';
+    }
+});
+
+// Confirm password validation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('new_password').value;
+    const confirm = this.value;
+    
+    if (confirm && password !== confirm) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

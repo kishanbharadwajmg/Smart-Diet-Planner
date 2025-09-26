@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+{% block title %}AI Nutrition Assistant{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1>AI Nutrition Assistant</h1>
+                <p class="text-muted">Ask questions about nutrition, diet planning, and get personalized recommendations.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Chat Interface -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Chat with Your AI Nutritionist</h5>
+                    <div id="ai-status" class="badge bg-secondary">Checking AI Status...</div>
+                </div>
+                <div class="card-body">
+                    <div id="chat-container" style="height: 400px; overflow-y: auto; border: 1px solid #e9ecef; padding: 15px; margin-bottom: 15px; background-color: #f8f9fa;">
+                        <div class="chat-message ai-message">
+                            <div class="message-content">
+                                <strong>AI Nutritionist:</strong> Hello! I'm your personal nutrition assistant. I can help you with diet planning, answer nutrition questions, suggest meal alternatives, and analyze your progress. What would you like to know?
+                            </div>
+                            <div class="message-time" id="current-time"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="question-input" class="form-control" placeholder="Ask a nutrition question..." maxlength="500">
+                        <button class="btn btn-primary" type="button" id="send-question" onclick="sendQuestion()">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                    
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Examples: "What should I eat for breakfast?", "How can I increase my protein intake?", "Suggest a healthy dinner recipe"
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <button class="btn btn-outline-primary btn-block" onclick="getQuickTips()">
+                                <i class="fas fa-lightbulb"></i> Get Personalized Tips
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button class="btn btn-outline-success btn-block" onclick="analyzeProgress()">
+                                <i class="fas fa-chart-line"></i> Analyze My Progress
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('ai_agent.generate_diet_plan') }}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-utensils"></i> Generate Diet Plan
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button class="btn btn-outline-warning btn-block" data-bs-toggle="modal" data-bs-target="#alternativesModal">
+                                <i class="fas fa-exchange-alt"></i> Find Meal Alternatives
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- User Profile Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Your Profile</h5>
+                </div>
+                <div class="card-body">
+                    <div class="user-stats">
+                        <div class="stat-item">
+                            <strong>Daily Calorie Goal:</strong> {{ current_user.daily_calorie_goal or 'Not set' }} cal
+                        </div>
+                        <div class="stat-item">
+                            <strong>Food Preference:</strong> {{ current_user.food_preferences }}
+                        </div>
+                        <div class="stat-item">
+                            <strong>Activity Level:</strong> {{ current_user.activity_level }}
+                        </div>
+                        <div class="stat-item">
+                            <strong>BMI:</strong> {{ current_user.get_bmi() }} ({{ current_user.get_bmi_category() }})
+                        </div>
+                        {% if current_user.is_diabetic %}
+                        <div class="stat-item">
+                            <span class="badge badge-warning">Diabetic Considerations</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Today's Progress</h5>
+                </div>
+                <div class="card-body">
+                    {% set progress = current_user.get_calorie_progress() %}
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar" style="width: {{ progress.percentage }}%" 
+                             aria-valuenow="{{ progress.percentage }}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <small>{{ progress.consumed }} / {{ progress.goal }} calories ({{ progress.percentage }}%)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Meal Alternatives Modal -->
+<div class="modal fade" id="alternativesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Find Meal Alternatives</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="alternatives-form">
+                    <div class="mb-3">
+                        <label for="current-meal" class="form-label">Current Meal</label>
+                        <input type="text" class="form-control" id="current-meal" placeholder="e.g., Grilled chicken breast with rice" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="restrictions" class="form-label">Additional Restrictions (optional)</label>
+                        <input type="text" class="form-control" id="restrictions" placeholder="e.g., dairy-free, low-sodium">
+                        <small class="form-text text-muted">Separate multiple restrictions with commas</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Get Alternatives</button>
+                </form>
+                <div id="alternatives-results" class="mt-4" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.user-message {
+    background-color: #e3f2fd;
+    margin-left: 20%;
+}
+
+.ai-message {
+    background-color: #f1f8e9;
+    margin-right: 20%;
+}
+
+.message-content {
+    margin-bottom: 5px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.message-content p {
+    margin-bottom: 10px;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Markdown heading styles for AI responses */
+.message-content h1 {
+    font-size: 1.4em;
+    font-weight: bold;
+    margin: 15px 0 10px 0;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 5px;
+}
+
+.message-content h2 {
+    font-size: 1.3em;
+    font-weight: bold;
+    margin: 12px 0 8px 0;
+    color: #34495e;
+    border-bottom: 1px solid #95a5a6;
+    padding-bottom: 3px;
+}
+
+.message-content h3 {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 10px 0 6px 0;
+    color: #2c3e50;
+}
+
+.message-content h4 {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 8px 0 4px 0;
+    color: #34495e;
+}
+
+/* List styles for AI responses */
+.message-content ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.message-content li {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+/* Better spacing for formatted content */
+.message-content strong {
+    color: #2c3e50;
+}
+
+.message-content em {
+    color: #7f8c8d;
+}
+
+.message-time {
+    font-size: 0.8em;
+    color: #666;
+    text-align: right;
+}
+
+.stat-item {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.loading {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+let isLoading = false;
+
+// Format AI response text for better display with enhanced markdown support
+function formatResponse(text) {
+    if (!text) return '';
+    
+    // Process markdown formatting
+    let formatted = text
+        // Handle headings first (before other processing)
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')           // ### Heading 3
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')            // ## Heading 2  
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')             // # Heading 1
+        
+        // Handle list items (mark them for later processing)
+        .replace(/^\* (.*$)/gim, '<!LISTITEM!>$1<!ENDLISTITEM!>')      // * List item
+        .replace(/^- (.*$)/gim, '<!LISTITEM!>$1<!ENDLISTITEM!>')       // - List item
+        .replace(/^\d+\. (.*$)/gim, '<!NUMLISTITEM!>$1<!ENDNUMLISTITEM!>') // 1. Numbered list
+        
+        // Handle bold and italic
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold text
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')              // Italic text
+        
+        // Handle line breaks and paragraphs
+        .replace(/\n\n/g, '</p><p>')                       // Double newlines become paragraph breaks
+        .replace(/\n/g, '<br>')                            // Single newlines become line breaks
+        
+        // Handle bullet points
+        .replace(/•/g, '&bull;')                           // Bullet points
+        .replace(/- /g, '&bull; ');                        // Convert remaining dashes to bullet points
+    
+    // Wrap in paragraphs and clean up
+    formatted = '<p>' + formatted + '</p>'
+        .replace(/<p><\/p>/g, '')                                    // Remove empty paragraphs
+        .replace(/<p>(<h[1-6]>.*?<\/h[1-6]>)<\/p>/g, '$1')           // Remove paragraph tags around headings
+        
+        // Process list items
+        .replace(/<!LISTITEM!>(.*?)<!ENDLISTITEM!>/g, '<li>$1</li>') // Convert list markers to li tags
+        .replace(/<!NUMLISTITEM!>(.*?)<!ENDNUMLISTITEM!>/g, '<li>$1</li>') // Convert numbered list markers
+        
+        // Wrap consecutive list items in ul tags
+        .replace(/(<li>.*?<\/li>)(<br>)?/g, '$1')  // Clean up line breaks after list items
+        .replace(/(<li>.*?<\/li>\s*)+/g, function(match) {
+            return '<ul>' + match + '</ul>';
+        })
+        
+        .replace(/<p>(<ul>.*?<\/ul>)<\/p>/g, '$1')                    // Remove paragraph tags around lists
+        .replace(/<\/li><br><li>/g, '</li><li>');                    // Clean up any remaining list formatting
+    
+    return formatted;
+}
+
+// Set initial time and check AI status
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    document.getElementById('current-time').textContent = timeStr;
+    
+    // Check AI status
+    checkAIStatus();
+});
+
+function checkAIStatus() {
+    fetch('/ai-agent/debug')
+    .then(response => response.json())
+    .then(data => {
+        const statusBadge = document.getElementById('ai-status');
+        
+        // Check Gemini first (primary AI)
+        if (data.gemini_status === 'Available') {
+            statusBadge.className = 'badge bg-success';
+            statusBadge.textContent = 'Gemini AI Active';
+        } else if (data.ollama_status === 'Available') {
+            statusBadge.className = 'badge bg-success';
+            statusBadge.textContent = 'Ollama AI Active';
+        } else if (data.gemini_status === 'Not available' && data.ollama_status === 'Not running') {
+            statusBadge.className = 'badge bg-warning';
+            statusBadge.textContent = 'AI Offline (Check Config)';
+        } else {
+            statusBadge.className = 'badge bg-danger';
+            statusBadge.textContent = 'AI Unavailable';
+        }
+    })
+    .catch(error => {
+        const statusBadge = document.getElementById('ai-status');
+        statusBadge.className = 'badge bg-danger';
+        statusBadge.textContent = 'AI Status Unknown';
+    });
+}
+
+function sendQuestion() {
+    if (isLoading) return;
+    
+    const input = document.getElementById('question-input');
+    const question = input.value.trim();
+    
+    if (!question) return;
+    
+    // Add user message to chat
+    addMessage(question, 'user');
+    input.value = '';
+    
+    // Show loading
+    isLoading = true;
+    const loadingId = addMessage('<span class="loading"></span> Thinking...', 'ai');
+    
+    // Send to API
+    fetch('/ai-agent/ask', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question: question })
+    })
+    .then(response => response.json())
+    .then(data => {
+        isLoading = false;
+        removeMessage(loadingId);
+        
+        if (data.success) {
+            let sourceIcon = '';
+            if (data.source === 'gemini') {
+                sourceIcon = '<span class="badge bg-primary ms-2">Gemini</span>';
+            } else if (data.source === 'ollama') {
+                sourceIcon = '<span class="badge bg-success ms-2">Ollama</span>';
+            } else if (data.source === 'openai') {
+                sourceIcon = '<span class="badge bg-info ms-2">OpenAI</span>';
+            } else if (data.source === 'fallback') {
+                sourceIcon = '<span class="badge bg-warning ms-2">Rule-based</span>';
+            } else {
+                sourceIcon = '<span class="badge bg-secondary ms-2">AI</span>';
+            }
+            addMessage(formatResponse(data.answer) + sourceIcon, 'ai');
+        } else {
+            addMessage('Sorry, I encountered an error: ' + (data.error || 'Unknown error'), 'ai');
+        }
+    })
+    .catch(error => {
+        isLoading = false;
+        removeMessage(loadingId);
+        addMessage('Sorry, I encountered a network error. Please try again.', 'ai');
+        console.error('Error:', error);
+    });
+}
+
+function addMessage(content, sender) {
+    const chatContainer = document.getElementById('chat-container');
+    const messageId = 'msg-' + Date.now();
+    const messageDiv = document.createElement('div');
+    messageDiv.id = messageId;
+    messageDiv.className = `chat-message ${sender}-message`;
+    
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    messageDiv.innerHTML = `
+        <div class="message-content">
+            <strong>${sender === 'user' ? 'You' : 'AI Nutritionist'}:</strong> ${content}
+        </div>
+        <div class="message-time">${timeStr}</div>
+    `;
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    return messageId;
+}
+
+function removeMessage(messageId) {
+    const message = document.getElementById(messageId);
+    if (message) {
+        message.remove();
+    }
+}
+
+function getQuickTips() {
+    if (isLoading) return;
+    
+    isLoading = true;
+    const loadingId = addMessage('<span class="loading"></span> Getting your personalized tips...', 'ai');
+    
+    fetch('/ai-agent/quick-tips')
+    .then(response => response.json())
+    .then(data => {
+        isLoading = false;
+        removeMessage(loadingId);
+        
+        if (data.success) {
+            addMessage(formatResponse(data.tips), 'ai');
+        } else {
+            addMessage('Sorry, I couldn\'t get your tips right now.', 'ai');
+        }
+    })
+    .catch(error => {
+        isLoading = false;
+        removeMessage(loadingId);
+        addMessage('Sorry, I encountered an error getting your tips.', 'ai');
+    });
+}
+
+function analyzeProgress() {
+    if (isLoading) return;
+    
+    isLoading = true;
+    const loadingId = addMessage('<span class="loading"></span> Analyzing your progress...', 'ai');
+    
+    fetch('/ai-agent/analyze-progress')
+    .then(response => response.json())
+    .then(data => {
+        isLoading = false;
+        removeMessage(loadingId);
+        
+        if (data.success) {
+            addMessage(formatResponse(data.analysis), 'ai');
+        } else {
+            addMessage('Sorry, I couldn\'t analyze your progress right now.', 'ai');
+        }
+    })
+    .catch(error => {
+        isLoading = false;
+        removeMessage(loadingId);
+        addMessage('Sorry, I encountered an error analyzing your progress.', 'ai');
+    });
+}
+
+// Handle meal alternatives form
+document.getElementById('alternatives-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const currentMeal = document.getElementById('current-meal').value.trim();
+    const restrictionsText = document.getElementById('restrictions').value.trim();
+    const restrictions = restrictionsText ? restrictionsText.split(',').map(r => r.trim()) : [];
+    
+    if (!currentMeal) return;
+    
+    const resultsDiv = document.getElementById('alternatives-results');
+    resultsDiv.innerHTML = '<div class="text-center"><span class="loading"></span> Finding alternatives...</div>';
+    resultsDiv.style.display = 'block';
+    
+    fetch('/ai-agent/meal-alternatives', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            current_meal: currentMeal,
+            restrictions: restrictions
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.alternatives.length > 0) {
+            let html = '<h6>Alternative Meals:</h6>';
+            data.alternatives.forEach(alt => {
+                html += `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <h6 class="card-title">${alt.name}</h6>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Calories: ${alt.calories} | Protein: ${alt.protein}g | 
+                                    Carbs: ${alt.carbs}g | Fat: ${alt.fat}g
+                                </small>
+                            </p>
+                            ${alt.instructions ? `<p><strong>Instructions:</strong> ${alt.instructions}</p>` : ''}
+                            ${alt.prep_time ? `<p><strong>Prep Time:</strong> ${alt.prep_time}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            resultsDiv.innerHTML = html;
+        } else {
+            resultsDiv.innerHTML = '<div class="alert alert-warning">No alternatives found. Try a different meal or check your restrictions.</div>';
+        }
+    })
+    .catch(error => {
+        resultsDiv.innerHTML = '<div class="alert alert-danger">Error finding alternatives. Please try again.</div>';
+    });
+});
+
+// Allow Enter key to send message
+document.getElementById('question-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        sendQuestion();
+    }
+});
+</script>
+{% endblock %}

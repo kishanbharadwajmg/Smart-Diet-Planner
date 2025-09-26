@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}Dietary Preferences - Smart Diet Planner{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-gear"></i> Dietary Preferences
+                </h1>
+                <a href="{{ url_for('dashboard.home') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Info Alert -->
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle"></i>
+                <strong>Personalize your experience!</strong> 
+                Add your food allergies, dislikes, and medical restrictions to get better recommendations 
+                and avoid foods that don't suit you.
+            </div>
+
+            <!-- Current Profile Info -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-person-badge"></i> Current Profile
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Dietary Type:</strong><br>
+                                    <span class="badge bg-{{ 'success' if current_user.food_preferences == 'Vegetarian' else 'warning' if current_user.food_preferences == 'Eggetarian' else 'danger' }}">
+                                        {{ current_user.food_preferences }}
+                                    </span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Health Status:</strong><br>
+                                    {% if current_user.is_diabetic %}
+                                        <span class="badge bg-warning">Diabetic</span>
+                                    {% else %}
+                                        <span class="badge bg-success">No restrictions</span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Activity Level:</strong><br>
+                                    <span class="badge bg-info">{{ current_user.activity_level }}</span>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-pencil"></i>
+                                    <a href="{{ url_for('auth.profile') }}" class="text-decoration-none">
+                                        Update basic profile settings
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Food Allergies -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-exclamation-triangle text-danger"></i> Food Allergies
+                            </h5>
+                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addAllergyModal">
+                                <i class="bi bi-plus"></i> Add Allergy
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            {% if allergies %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for allergy in allergies %}
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="bi bi-exclamation-triangle"></i> {{ allergy }}
+                                        <button type="button" class="btn-close btn-close-white ms-1" 
+                                                onclick="removePreference('allergy', '{{ allergy }}')" 
+                                                aria-label="Remove"></button>
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-shield-check"></i>
+                                        Foods containing these ingredients will be filtered out from recommendations.
+                                    </small>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="bi bi-check-circle text-success display-6"></i>
+                                    <p class="text-muted mt-2 mb-0">No food allergies recorded</p>
+                                    <small class="text-muted">Click "Add Allergy" if you have any food allergies</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Food Dislikes -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-hand-thumbs-down text-warning"></i> Food Dislikes
+                            </h5>
+                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#addDislikeModal">
+                                <i class="bi bi-plus"></i> Add Dislike
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            {% if dislikes %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for dislike in dislikes %}
+                                    <span class="badge bg-warning fs-6">
+                                        <i class="bi bi-hand-thumbs-down"></i> {{ dislike }}
+                                        <button type="button" class="btn-close ms-1" 
+                                                onclick="removePreference('dislike', '{{ dislike }}')" 
+                                                aria-label="Remove"></button>
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-eye-slash"></i>
+                                        These foods will be less likely to appear in your recommendations.
+                                    </small>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="bi bi-hand-thumbs-up text-success display-6"></i>
+                                    <p class="text-muted mt-2 mb-0">No food dislikes recorded</p>
+                                    <small class="text-muted">Add foods you prefer not to eat</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical Restrictions -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-heart-pulse text-info"></i> Medical Dietary Restrictions
+                            </h5>
+                            <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#addMedicalModal">
+                                <i class="bi bi-plus"></i> Add Restriction
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            {% if medical %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for restriction in medical %}
+                                    <span class="badge bg-info fs-6">
+                                        <i class="bi bi-heart-pulse"></i> {{ restriction }}
+                                        <button type="button" class="btn-close btn-close-white ms-1" 
+                                                onclick="removePreference('medical', '{{ restriction }}')" 
+                                                aria-label="Remove"></button>
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-shield-plus"></i>
+                                        Medical restrictions for health conditions will be strictly followed.
+                                    </small>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="bi bi-heart text-success display-6"></i>
+                                    <p class="text-muted mt-2 mb-0">No medical restrictions recorded</p>
+                                    <small class="text-muted">Add any dietary restrictions due to medical conditions</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Setup Section -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-lightning"></i> Quick Setup
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">Need help getting started? Try these common setups:</p>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="d-grid">
+                                        <button class="btn btn-outline-success" onclick="quickSetup('vegetarian')">
+                                            <i class="bi bi-leaf"></i><br>
+                                            Strict Vegetarian
+                                        </button>
+                                    </div>
+                                    <small class="text-muted d-block text-center mt-1">No meat, fish, eggs</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-grid">
+                                        <button class="btn btn-outline-info" onclick="quickSetup('diabetic')">
+                                            <i class="bi bi-heart-pulse"></i><br>
+                                            Diabetic Friendly
+                                        </button>
+                                    </div>
+                                    <small class="text-muted d-block text-center mt-1">Low sugar, low GI</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-grid">
+                                        <button class="btn btn-outline-warning" onclick="quickSetup('common-allergies')">
+                                            <i class="bi bi-shield-exclamation"></i><br>
+                                            Common Allergies
+                                        </button>
+                                    </div>
+                                    <small class="text-muted d-block text-center mt-1">Nuts, dairy, gluten</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Allergy Modal -->
+<div class="modal fade" id="addAllergyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Food Allergy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="preference_type" value="allergy">
+                    <div class="mb-3">
+                        <label for="allergyValue" class="form-label">Allergy *</label>
+                        <input type="text" class="form-control" id="allergyValue" name="preference_value" 
+                               placeholder="e.g., Peanuts, Shellfish, Dairy" required>
+                        <div class="form-text">Enter the food or ingredient you're allergic to</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-plus"></i> Add Allergy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Dislike Modal -->
+<div class="modal fade" id="addDislikeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Food Dislike</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="preference_type" value="dislike">
+                    <div class="mb-3">
+                        <label for="dislikeValue" class="form-label">Food Dislike *</label>
+                        <input type="text" class="form-control" id="dislikeValue" name="preference_value" 
+                               placeholder="e.g., Bitter gourd, Mushrooms, Spicy food" required>
+                        <div class="form-text">Enter foods you prefer not to eat</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-plus"></i> Add Dislike
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Medical Restriction Modal -->
+<div class="modal fade" id="addMedicalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Medical Restriction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="preference_type" value="medical">
+                    <div class="mb-3">
+                        <label for="medicalValue" class="form-label">Medical Restriction *</label>
+                        <input type="text" class="form-control" id="medicalValue" name="preference_value" 
+                               placeholder="e.g., Low sodium, Low sugar, Gluten-free" required>
+                        <div class="form-text">Enter dietary restrictions due to medical conditions</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info">
+                        <i class="bi bi-plus"></i> Add Restriction
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function removePreference(type, value) {
+    if (confirm(`Are you sure you want to remove "${value}" from your ${type}s?`)) {
+        // Create a form to submit the removal
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/api/remove_preference';
+        
+        const typeInput = document.createElement('input');
+        typeInput.type = 'hidden';
+        typeInput.name = 'preference_type';
+        typeInput.value = type;
+        form.appendChild(typeInput);
+        
+        const valueInput = document.createElement('input');
+        valueInput.type = 'hidden';
+        valueInput.name = 'preference_value';
+        valueInput.value = value;
+        form.appendChild(valueInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function quickSetup(setupType) {
+    let confirmMessage = '';
+    let preferences = [];
+    
+    if (setupType === 'vegetarian') {
+        confirmMessage = 'Add common non-vegetarian items to your dislikes?';
+        preferences = [
+            {type: 'dislike', value: 'Chicken'},
+            {type: 'dislike', value: 'Mutton'},
+            {type: 'dislike', value: 'Fish'},
+            {type: 'dislike', value: 'Eggs'},
+            {type: 'dislike', value: 'Prawns'}
+        ];
+    } else if (setupType === 'diabetic') {
+        confirmMessage = 'Add diabetic-friendly restrictions?';
+        preferences = [
+            {type: 'medical', value: 'Low sugar'},
+            {type: 'medical', value: 'Low GI foods only'},
+            {type: 'dislike', value: 'Sweets'},
+            {type: 'dislike', value: 'High sugar fruits'}
+        ];
+    } else if (setupType === 'common-allergies') {
+        confirmMessage = 'Add common allergens to your allergy list?';
+        preferences = [
+            {type: 'allergy', value: 'Peanuts'},
+            {type: 'allergy', value: 'Tree nuts'},
+            {type: 'allergy', value: 'Dairy'},
+            {type: 'allergy', value: 'Gluten'}
+        ];
+    }
+    
+    if (confirm(confirmMessage)) {
+        // Submit preferences one by one
+        preferences.forEach((pref, index) => {
+            setTimeout(() => {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                
+                const typeInput = document.createElement('input');
+                typeInput.type = 'hidden';
+                typeInput.name = 'preference_type';
+                typeInput.value = pref.type;
+                form.appendChild(typeInput);
+                
+                const valueInput = document.createElement('input');
+                valueInput.type = 'hidden';
+                valueInput.name = 'preference_value';
+                valueInput.value = pref.value;
+                form.appendChild(valueInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }, index * 100); // Small delay between submissions
+        });
+    }
+}
+</script>
+
+<style>
+.fs-6 {
+    font-size: 0.875rem !important;
+}
+
+.btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.badge {
+    transition: all 0.2s ease;
+}
+
+.badge:hover {
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}

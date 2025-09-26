@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Generate Diet Plan{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="page-header">
+                <h1>Generate Personalized Diet Plan</h1>
+                <p class="text-muted">Get a custom 7-day diet plan tailored to your goals and preferences.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Diet Plan Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="diet-plan-form">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="meal_count" class="form-label">Meals per Day</label>
+                                    <select class="form-select" id="meal_count" name="meal_count" required>
+                                        <option value="3">3 meals (Breakfast, Lunch, Dinner)</option>
+                                        <option value="5">5 meals (3 main + 2 snacks)</option>
+                                        <option value="6">6 meals (3 main + 3 snacks)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="cuisine_preference" class="form-label">Cuisine Preference</label>
+                                    <select class="form-select" id="cuisine_preference" name="cuisine_preference">
+                                        <option value="">No preference</option>
+                                        <option value="mediterranean">Mediterranean</option>
+                                        <option value="asian">Asian</option>
+                                        <option value="indian">Indian</option>
+                                        <option value="mexican">Mexican</option>
+                                        <option value="american">American</option>
+                                        <option value="european">European</option>
+                                        <option value="middle_eastern">Middle Eastern</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="cooking_time" class="form-label">Cooking Time Preference</label>
+                                    <select class="form-select" id="cooking_time" name="cooking_time">
+                                        <option value="">No preference</option>
+                                        <option value="quick">Quick (15-30 min)</option>
+                                        <option value="moderate">Moderate (30-60 min)</option>
+                                        <option value="elaborate">I enjoy cooking (60+ min)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="budget_range" class="form-label">Budget Range</label>
+                                    <select class="form-select" id="budget_range" name="budget_range">
+                                        <option value="">No preference</option>
+                                        <option value="budget">Budget-friendly</option>
+                                        <option value="moderate">Moderate</option>
+                                        <option value="premium">Premium ingredients okay</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="special_goals" class="form-label">Special Goals</label>
+                            <select class="form-select" id="special_goals" name="special_goals">
+                                <option value="">No specific goal</option>
+                                <option value="weight_loss">Weight Loss</option>
+                                <option value="weight_gain">Weight Gain</option>
+                                <option value="muscle_building">Muscle Building</option>
+                                <option value="maintenance">Weight Maintenance</option>
+                                <option value="endurance">Endurance Training</option>
+                                <option value="strength">Strength Training</option>
+                                <option value="general_health">General Health</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="additional_notes" class="form-label">Additional Notes or Preferences</label>
+                            <textarea class="form-control" id="additional_notes" name="additional_notes" rows="3" 
+                                      placeholder="Any specific foods you want included/excluded, allergies, or other preferences..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Your Current Profile:</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled mb-0">
+                                        <li><strong>Age:</strong> {{ current_user.age }}</li>
+                                        <li><strong>Gender:</strong> {{ current_user.gender }}</li>
+                                        <li><strong>Activity Level:</strong> {{ current_user.activity_level }}</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled mb-0">
+                                        <li><strong>Food Preference:</strong> {{ current_user.food_preferences }}</li>
+                                        <li><strong>Daily Calories:</strong> {{ current_user.daily_calorie_goal or 'Not set' }}</li>
+                                        <li><strong>Diabetic:</strong> {{ 'Yes' if current_user.is_diabetic else 'No' }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" id="generate-btn">
+                                <i class="fas fa-magic"></i> Generate My Diet Plan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6><i class="fas fa-clock"></i> What to Expect</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Complete 7-day meal plan</li>
+                        <li><i class="fas fa-check text-success"></i> Detailed nutritional breakdown</li>
+                        <li><i class="fas fa-check text-success"></i> Shopping list for the week</li>
+                        <li><i class="fas fa-check text-success"></i> Meal preparation tips</li>
+                        <li><i class="fas fa-check text-success"></i> Portion sizes and calorie counts</li>
+                    </ul>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Generation may take 30-60 seconds. The plan will be personalized based on your profile and preferences.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('diet-plan-form').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('generate-btn');
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Generating...';
+    submitBtn.disabled = true;
+});
+</script>
+{% endblock %}

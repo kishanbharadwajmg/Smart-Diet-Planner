@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Diet Planner - Track Your Nutrition with Indian Foods{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-primary text-white py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Smart Diet Planner</h1>
+                <p class="lead mb-4">
+                    Track your nutrition with our comprehensive Indian food database. 
+                    Calculate your TDEE, log meals, and achieve your health goals with 
+                    personalized recommendations.
+                </p>
+                <div class="d-grid gap-2 d-md-flex">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg px-4 me-md-2">
+                        <i class="bi bi-person-plus"></i> Get Started
+                    </a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <i class="bi bi-apple display-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container mb-5">
+    <div class="row text-center mb-5">
+        <div class="col">
+            <h2 class="fw-bold mb-4">Why Choose Smart Diet Planner?</h2>
+            <p class="lead text-muted">
+                Designed specifically for Indian food lovers with comprehensive nutrition tracking
+            </p>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="bi bi-calculator display-4 text-primary mb-3"></i>
+                    <h5 class="card-title">TDEE Calculator</h5>
+                    <p class="card-text">
+                        Automatically calculate your Total Daily Energy Expenditure 
+                        using the scientifically proven Mifflin-St Jeor formula.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="bi bi-egg-fried display-4 text-success mb-3"></i>
+                    <h5 class="card-title">Indian Food Database</h5>
+                    <p class="card-text">
+                        Comprehensive database of 500+ Indian foods with accurate 
+                        nutritional information, GI values, and regional varieties.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="bi bi-heart-pulse display-4 text-danger mb-3"></i>
+                    <h5 class="card-title">Health-Focused</h5>
+                    <p class="card-text">
+                        Special support for diabetic users with low-GI food recommendations 
+                        and dietary preference management.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="bi bi-graph-up display-4 text-info mb-3"></i>
+                    <h5 class="card-title">Progress Tracking</h5>
+                    <p class="card-text">
+                        Visual charts and analytics to track your daily nutrition, 
+                        calories, and macro goals with detailed insights.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="bi bi-lightbulb display-4 text-warning mb-3"></i>
+                    <h5 class="card-title">Smart Recommendations</h5>
+                    <p class="card-text">
+                        Get personalized food recommendations based on your preferences, 
+                        dietary restrictions, and nutritional goals.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body">
+                    <i class="bi bi-download display-4 text-secondary mb-3"></i>
+                    <h5 class="card-title">Export Data</h5>
+                    <p class="card-text">
+                        Export your food logs and nutrition data as CSV files 
+                        for further analysis or sharing with healthcare providers.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works Section -->
+<div class="bg-light py-5 mb-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col">
+                <h2 class="fw-bold mb-4">How It Works</h2>
+                <p class="lead text-muted">Get started in just a few simple steps</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-3 text-center">
+                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <span class="fs-3 fw-bold">1</span>
+                </div>
+                <h5>Create Account</h5>
+                <p class="text-muted">
+                    Register with your basic information including age, gender, height, weight, and activity level.
+                </p>
+            </div>
+            
+            <div class="col-md-3 text-center">
+                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <span class="fs-3 fw-bold">2</span>
+                </div>
+                <h5>Set Goals</h5>
+                <p class="text-muted">
+                    Our system automatically calculates your TDEE and sets personalized calorie and macro goals.
+                </p>
+            </div>
+            
+            <div class="col-md-3 text-center">
+                <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <span class="fs-3 fw-bold">3</span>
+                </div>
+                <h5>Log Meals</h5>
+                <p class="text-muted">
+                    Search and log your meals from our extensive Indian food database with accurate portion tracking.
+                </p>
+            </div>
+            
+            <div class="col-md-3 text-center">
+                <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <span class="fs-3 fw-bold">4</span>
+                </div>
+                <h5>Track Progress</h5>
+                <p class="text-muted">
+                    Monitor your daily nutrition intake with visual charts and get recommendations for improvement.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Food Types Section -->
+<div class="container mb-5">
+    <div class="row text-center mb-5">
+        <div class="col">
+            <h2 class="fw-bold mb-4">Comprehensive Food Coverage</h2>
+            <p class="lead text-muted">
+                Support for all dietary preferences with accurate nutritional data
+            </p>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-4 text-center">
+            <div class="text-success mb-3">
+                <i class="bi bi-check-circle-fill display-4"></i>
+            </div>
+            <h5 class="text-success">Vegetarian</h5>
+            <p class="text-muted">
+                Extensive collection of vegetarian Indian dishes including 
+                regional specialties, snacks, and traditional recipes.
+            </p>
+        </div>
+        
+        <div class="col-md-4 text-center">
+            <div class="text-danger mb-3">
+                <i class="bi bi-heart-fill display-4"></i>
+            </div>
+            <h5 class="text-danger">Non-Vegetarian</h5>
+            <p class="text-muted">
+                Complete database of meat, chicken, fish, and seafood dishes 
+                with authentic Indian preparations and cooking methods.
+            </p>
+        </div>
+        
+        <div class="col-md-4 text-center">
+            <div class="text-warning mb-3">
+                <i class="bi bi-egg-fill display-4"></i>
+            </div>
+            <h5 class="text-warning">Eggetarian</h5>
+            <p class="text-muted">
+                Special category for those who eat eggs but not meat, 
+                including egg-based Indian dishes and preparations.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class="bg-primary text-white py-5">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-4">Ready to Start Your Health Journey?</h2>
+        <p class="lead mb-4">
+            Join thousands of users who are already tracking their nutrition and achieving their health goals.
+        </p>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg px-5">
+            <i class="bi bi-person-plus"></i> Start Free Today
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Add smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+</script>
+{% endblock %}

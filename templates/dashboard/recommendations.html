@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Food Recommendations - Smart Diet Planner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-lightbulb"></i> Food Recommendations
+                </h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('dashboard.log_meal') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Log Meal
+                    </a>
+                    <a href="{{ url_for('dashboard.home') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-house"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-funnel"></i> Filter Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="meal_type" class="form-label">Meal Type</label>
+                            <select id="meal_type" name="meal_type" class="form-select">
+                                <option value="">All Meal Types</option>
+                                {% for meal_type in meal_types %}
+                                <option value="{{ meal_type }}" 
+                                        {% if meal_type == selected_meal_type %}selected{% endif %}>
+                                    {{ meal_type }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="category" class="form-label">Category</label>
+                            <select id="category" name="category" class="form-select">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}" 
+                                        {% if category == selected_category %}selected{% endif %}>
+                                    {{ category }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i> Apply Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 
+                These recommendations are personalized based on your dietary preferences 
+                {% if current_user.food_preferences %}({{ current_user.food_preferences }}){% endif %}
+                {% if current_user.is_diabetic %}and diabetic-friendly options{% endif %}.
+                {% if selected_meal_type or selected_category %}
+                    <br><strong>Filtered by:</strong>
+                    {% if selected_meal_type %}Meal Type: {{ selected_meal_type }}{% endif %}
+                    {% if selected_category %}{% if selected_meal_type %}, {% endif %}Category: {{ selected_category }}{% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Grid -->
+    {% if recommended_foods %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="bi bi-star"></i> Recommended for You 
+                <span class="badge bg-primary">{{ recommended_foods|length }} items</span>
+            </h4>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for food in recommended_foods %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 food-recommendation-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ food.name }}</h5>
+                        <span class="badge bg-{{ 'success' if food.food_type == 'Vegetarian' else 'warning' if food.food_type == 'Eggetarian' else 'danger' }}">
+                            {{ food.food_type }}
+                        </span>
+                    </div>
+                    
+                    <p class="text-muted mb-2">
+                        <i class="bi bi-tag"></i> {{ food.category }}
+                        {% if food.gi_index %}
+                            • GI: {{ food.gi_index }} 
+                            <span class="badge bg-{{ 'success' if food.gi_index <= 55 else 'warning' if food.gi_index <= 70 else 'danger' }} badge-sm">
+                                {{ food.get_gi_category() }}
+                            </span>
+                        {% endif %}
+                    </p>
+
+                    <!-- Nutrition Info -->
+                    <div class="nutrition-info mb-3">
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <strong class="text-primary">{{ food.calories_per_100g }}</strong><br>
+                                <small class="text-muted">Cal/100g</small>
+                            </div>
+                            <div class="col-3">
+                                <strong class="text-success">{{ "%.1f"|format(food.protein_per_100g) }}g</strong><br>
+                                <small class="text-muted">Protein</small>
+                            </div>
+                            <div class="col-3">
+                                <strong class="text-warning">{{ "%.1f"|format(food.carbs_per_100g) }}g</strong><br>
+                                <small class="text-muted">Carbs</small>
+                            </div>
+                            <div class="col-3">
+                                <strong class="text-info">{{ "%.1f"|format(food.fat_per_100g) }}g</strong><br>
+                                <small class="text-muted">Fat</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Why Recommended -->
+                    <div class="recommendation-reason mb-3">
+                        <small class="text-muted">
+                            <i class="bi bi-check-circle text-success"></i>
+                            {% if food.food_type == current_user.food_preferences %}
+                                Matches your {{ current_user.food_preferences.lower() }} preference
+                            {% elif current_user.is_diabetic and food.is_suitable_for_diabetic() %}
+                                Diabetic-friendly (Low GI)
+                            {% elif food.get_nutrition_density() > 15 %}
+                                High protein content
+                            {% else %}
+                                Suitable for your dietary goals
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="btn-group w-100">
+                        <a href="{{ url_for('dashboard.food_detail', food_id=food.id) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-eye"></i> Details
+                        </a>
+                        <button type="button" class="btn btn-success btn-sm" 
+                                onclick="quickLog({{ food.id }}, '{{ food.name }}')">
+                            <i class="bi bi-plus-circle"></i> Quick Log
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- No Recommendations -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="py-5">
+                        <i class="bi bi-lightbulb display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">No Recommendations Found</h4>
+                        <p class="text-muted">
+                            {% if selected_meal_type or selected_category %}
+                                Try adjusting your filters to see more recommendations.
+                            {% else %}
+                                We're working on personalized recommendations for you.
+                            {% endif %}
+                        </p>
+                        {% if selected_meal_type or selected_category %}
+                        <a href="{{ url_for('dashboard.recommendations') }}" class="btn btn-primary">
+                            <i class="bi bi-arrow-clockwise"></i> Clear Filters
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('dashboard.log_meal') }}" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Browse All Foods
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tips Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightbulb"></i> Nutrition Tips
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-heart text-danger"></i> Heart Healthy</h6>
+                            <p class="text-muted small">
+                                Choose foods high in fiber and low in saturated fat. 
+                                Look for whole grains and lean proteins.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-graph-up text-success"></i> Balanced Nutrition</h6>
+                            <p class="text-muted small">
+                                Aim for a mix of protein, carbs, and healthy fats in each meal. 
+                                Include colorful vegetables for vitamins and minerals.
+                            </p>
+                        </div>
+                    </div>
+                    {% if current_user.is_diabetic %}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-shield-check"></i> Diabetic-Friendly Tips</h6>
+                                <p class="mb-0 small">
+                                    Focus on low GI foods (≤55) that help maintain stable blood sugar levels. 
+                                    Green badges indicate low GI options that are recommended for you.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Log Modal -->
+<div class="modal fade" id="quickLogModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Log</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickLogForm">
+                    <input type="hidden" id="quickFoodId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Food: <strong id="quickFoodName"></strong></label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <div class="row">
+                            <div class="col-8">
+                                <input type="number" id="quickQuantity" class="form-control" 
+                                       min="0.1" step="0.1" value="1" required>
+                            </div>
+                            <div class="col-4">
+                                <select id="quickUnit" class="form-select">
+                                    <option value="100">100g</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Meal Type</label>
+                        <select id="quickMealType" class="form-select" required>
+                            <option value="">Select meal type</option>
+                            {% for meal_type in meal_types %}
+                            <option value="{{ meal_type }}">{{ meal_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitQuickLog()">
+                    <i class="bi bi-check-circle"></i> Log Food
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function quickLog(foodId, foodName) {
+    document.getElementById('quickFoodId').value = foodId;
+    document.getElementById('quickFoodName').textContent = foodName;
+    
+    // Set default meal type based on current time
+    const hour = new Date().getHours();
+    let defaultMealType = '';
+    if (hour < 10) defaultMealType = 'Breakfast';
+    else if (hour < 12) defaultMealType = 'Mid-Morning';
+    else if (hour < 15) defaultMealType = 'Lunch';
+    else if (hour < 18) defaultMealType = 'Evening Snack';
+    else defaultMealType = 'Dinner';
+    
+    document.getElementById('quickMealType').value = defaultMealType;
+    
+    const modal = new bootstrap.Modal(document.getElementById('quickLogModal'));
+    modal.show();
+}
+
+function submitQuickLog() {
+    const foodId = document.getElementById('quickFoodId').value;
+    const quantity = parseFloat(document.getElementById('quickQuantity').value);
+    const unit = document.getElementById('quickUnit').value;
+    const mealType = document.getElementById('quickMealType').value;
+    
+    if (!quantity || !mealType) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('food_id', foodId);
+    formData.append('quantity_grams', quantity * parseFloat(unit));
+    formData.append('meal_type', mealType);
+    formData.append('log_date', new Date().toISOString().split('T')[0]);
+    
+    fetch('/api/log_meal', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('quickLogModal')).hide();
+            alert('Food logged successfully!');
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Failed to log food. Please try again.');
+    });
+}
+</script>
+
+<style>
+.food-recommendation-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.food-recommendation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.nutrition-info {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.recommendation-reason {
+    font-style: italic;
+    border-left: 3px solid #28a745;
+    padding-left: 8px;
+}
+
+.badge-sm {
+    font-size: 0.65em;
+}
+</style>
+{% endblock %}

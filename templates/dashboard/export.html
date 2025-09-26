@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Export Data - Smart Diet Planner{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-download"></i> Export Your Data
+                </h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('dashboard.home') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-house"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-info">
+                        <i class="bi bi-person"></i> Profile
+                    </a>
+                </div>
+            </div>
+
+            <!-- Food Diary Export -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Food Diary Export
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Export your complete food diary including all meals, calories, and nutritional information as a CSV file.</p>
+                            
+                            <form action="{{ url_for('api.export_csv') }}" method="GET" class="mb-3">
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label for="date_from" class="form-label">Start Date</label>
+                                        <input type="date" class="form-control" id="date_from" name="date_from" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="date_to" class="form-label">End Date</label>
+                                        <input type="date" class="form-control" id="date_to" name="date_to" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info small mb-3">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>CSV Format:</strong> The exported file will be compatible with Excel, Google Sheets, and other spreadsheet applications. 
+                                    It includes columns for Date, Time, Meal Type, Food Name, Quantity, Calories, Protein, Carbs, Fat, and Notes.
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-download"></i> Export Food Diary (CSV)
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-info-circle"></i> Export Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>What's Included:</h6>
+                            <ul class="mb-3">
+                                <li>All food log entries for the selected date range</li>
+                                <li>Detailed nutritional information per meal</li>
+                                <li>Timestamps and meal types</li>
+                                <li>Any notes you've added to meals</li>
+                            </ul>
+                            
+                            <h6>File Format:</h6>
+                            <p class="small text-muted mb-0">
+                                CSV (Comma Separated Values) files can be opened in Excel, Google Sheets, 
+                                Numbers, or any spreadsheet application for further analysis.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-calendar-range"></i> Date Range Tips
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Recommended Ranges:</h6>
+                            <ul class="mb-3">
+                                <li><strong>Last 7 days:</strong> Quick weekly review</li>
+                                <li><strong>Last 30 days:</strong> Monthly progress tracking</li>
+                                <li><strong>Last 90 days:</strong> Quarterly analysis</li>
+                                <li><strong>Custom range:</strong> Specific period analysis</li>
+                            </ul>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDateRange(7)">
+                                    Last 7 Days
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDateRange(30)">
+                                    Last 30 Days
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDateRange(90)">
+                                    Last 90 Days
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Privacy Notice -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-secondary">
+                        <h6><i class="bi bi-shield-check"></i> Data Privacy & Security</h6>
+                        <ul class="mb-0 small">
+                            <li>Exported files contain your personal data - keep them secure</li>
+                            <li>Files are generated on-demand and not stored on our servers</li>
+                            <li>You can export your data at any time as part of your data rights</li>
+                            <li>For questions about data usage, please contact support</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Set default dates (last 30 days)
+document.addEventListener('DOMContentLoaded', function() {
+    setDateRange(30);
+});
+
+// Function to set date range
+function setDateRange(days) {
+    const today = new Date();
+    const startDate = new Date(today.getTime() - (days * 24 * 60 * 60 * 1000));
+    
+    // Format dates as YYYY-MM-DD
+    const formatDate = (date) => {
+        return date.toISOString().split('T')[0];
+    };
+    
+    document.getElementById('date_from').value = formatDate(startDate);
+    document.getElementById('date_to').value = formatDate(today);
+}
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const startDate = new Date(document.getElementById('date_from').value);
+    const endDate = new Date(document.getElementById('date_to').value);
+    
+    if (startDate > endDate) {
+        e.preventDefault();
+        alert('Start date cannot be after end date.');
+        return false;
+    }
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating Export...';
+    submitBtn.disabled = true;
+    
+    // Reset button after 10 seconds in case of error
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 10000);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Food Diary - {{ view_date.strftime('%B %d, %Y') }} - Smart Diet Planner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-journal-text"></i> Food Diary
+                </h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('dashboard.log_meal') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Log Meal
+                    </a>
+                    <a href="{{ url_for('dashboard.home') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-house"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('dashboard.food_diary', date_str=prev_date.strftime('%Y-%m-%d')) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-chevron-left"></i> Previous Day
+                        </a>
+                        
+                        <div class="text-center">
+                            <h4 class="mb-0">{{ view_date.strftime('%A, %B %d, %Y') }}</h4>
+                            {% if view_date == view_date.today() %}
+                                <small class="text-primary">Today</small>
+                            {% endif %}
+                        </div>
+                        
+                        <a href="{{ url_for('dashboard.food_diary', date_str=next_date.strftime('%Y-%m-%d')) }}" 
+                           class="btn btn-outline-primary">
+                            Next Day <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Summary -->
+    {% if summary %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart"></i> Daily Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h4 class="text-primary">{{ summary.total_calories }}</h4>
+                            <p class="mb-0">Calories</p>
+                            <small class="text-muted">Goal: {{ summary.calorie_goal }}</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-success">{{ "%.1f"|format(summary.total_protein) }}g</h4>
+                            <p class="mb-0">Protein</p>
+                            <small class="text-muted">Goal: {{ "%.1f"|format(summary.protein_goal) }}g</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-warning">{{ "%.1f"|format(summary.total_carbs) }}g</h4>
+                            <p class="mb-0">Carbs</p>
+                            <small class="text-muted">Goal: {{ "%.1f"|format(summary.carb_goal) }}g</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-info">{{ "%.1f"|format(summary.total_fat) }}g</h4>
+                            <p class="mb-0">Fat</p>
+                            <small class="text-muted">Goal: {{ "%.1f"|format(summary.fat_goal) }}g</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress bars -->
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="progress" style="height: 8px;">
+                                {% set calorie_percent = (summary.total_calories / summary.calorie_goal * 100) if summary.calorie_goal > 0 else 0 %}
+                                <div class="progress-bar bg-primary" style="width: {{ calorie_percent }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="progress" style="height: 8px;">
+                                {% set protein_percent = (summary.total_protein / summary.protein_goal * 100) if summary.protein_goal > 0 else 0 %}
+                                <div class="progress-bar bg-success" style="width: {{ protein_percent }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="progress" style="height: 8px;">
+                                {% set carb_percent = (summary.total_carbs / summary.carb_goal * 100) if summary.carb_goal > 0 else 0 %}
+                                <div class="progress-bar bg-warning" style="width: {{ carb_percent }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="progress" style="height: 8px;">
+                                {% set fat_percent = (summary.total_fat / summary.fat_goal * 100) if summary.fat_goal > 0 else 0 %}
+                                <div class="progress-bar bg-info" style="width: {{ fat_percent }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Meals by Type -->
+    <div class="row">
+        <div class="col-12">
+            {% if meals_by_type %}
+                {% for meal_type, meal_logs in meals_by_type.items() %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-{{ 'sunrise' if meal_type == 'Breakfast' else 'sun' if meal_type == 'Lunch' else 'moon' if meal_type == 'Dinner' else 'clock' }}"></i>
+                                {{ meal_type }}
+                            </h5>
+                            <span class="badge bg-secondary">
+                                {{ meal_logs|length }} item{{ 's' if meal_logs|length != 1 else '' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Food Item</th>
+                                        <th>Quantity</th>
+                                        <th>Calories</th>
+                                        <th>Protein</th>
+                                        <th>Carbs</th>
+                                        <th>Fat</th>
+                                        <th>Time</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in meal_logs %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ log.food.name }}</strong>
+                                            {% if log.notes %}
+                                                <br><small class="text-muted">{{ log.notes }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ log.quantity_grams }}g</td>
+                                        <td>{{ log.calories_consumed }}</td>
+                                        <td>{{ "%.1f"|format(log.protein_consumed) }}g</td>
+                                        <td>{{ "%.1f"|format(log.carbs_consumed) }}g</td>
+                                        <td>{{ "%.1f"|format(log.fat_consumed) }}g</td>
+                                        <td>{{ log.created_at.strftime('%H:%M') }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('dashboard.edit_meal_log', log_id=log.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                        onclick="deleteMealLog({{ log.id }})" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Meal Type Summary -->
+                        <div class="row mt-3 text-center">
+                            {% set meal_calories = meal_logs|sum(attribute='calories_consumed') %}
+                            {% set meal_protein = meal_logs|sum(attribute='protein_consumed') %}
+                            {% set meal_carbs = meal_logs|sum(attribute='carbs_consumed') %}
+                            {% set meal_fat = meal_logs|sum(attribute='fat_consumed') %}
+                            
+                            <div class="col-3">
+                                <strong>{{ meal_calories }}</strong> cal
+                            </div>
+                            <div class="col-3">
+                                <strong>{{ "%.1f"|format(meal_protein) }}g</strong> protein
+                            </div>
+                            <div class="col-3">
+                                <strong>{{ "%.1f"|format(meal_carbs) }}g</strong> carbs
+                            </div>
+                            <div class="col-3">
+                                <strong>{{ "%.1f"|format(meal_fat) }}g</strong> fat
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="py-5">
+                            <i class="bi bi-journal-x display-1 text-muted"></i>
+                            <h4 class="text-muted mt-3">No meals logged for this day</h4>
+                            <p class="text-muted">Start tracking your nutrition by logging your first meal!</p>
+                            <a href="{{ url_for('dashboard.log_meal') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Log Your First Meal
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    {% if logs %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Quick Stats
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h4>{{ logs|length }}</h4>
+                            <p class="mb-0">Total Entries</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h4>{{ meals_by_type|length }}</h4>
+                            <p class="mb-0">Meal Types</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h4>{{ (logs|sum(attribute='calories_consumed') / logs|length)|round(0) if logs|length > 0 else 0 }}</h4>
+                            <p class="mb-0">Avg Calories/Entry</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this meal log entry? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function deleteMealLog(logId) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const form = document.getElementById('deleteForm');
+    form.action = `/dashboard/meal-log/${logId}/delete`;
+    modal.show();
+}
+
+// Auto-refresh if viewing today's data
+{% if view_date == view_date.today() %}
+setInterval(function() {
+    // Only refresh if the page is visible and user hasn't interacted recently
+    if (document.visibilityState === 'visible') {
+        location.reload();
+    }
+}, 300000); // 5 minutes
+{% endif %}
+</script>
+{% endblock %}
